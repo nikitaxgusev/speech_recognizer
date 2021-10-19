@@ -6,6 +6,8 @@ import threading
 import sounddevice as sd
 import soundfile as sf
 from speech_recognizer import speech_recognizer as sr
+import os
+from pygame import mixer
 
 
 class Window(QMainWindow):
@@ -69,11 +71,11 @@ class Window(QMainWindow):
         self.label_classification.setFont(QFont('Arial', 15))
 
         self.label_title_answer = QLabel("Answer:", self)
-        self.label_title_answer.setGeometry(0, 70, 70, 30)
+        self.label_title_answer.setGeometry(0, 78, 70, 30)
         self.label_title_answer.setFont(QFont('Arial', 15))
 
         self.label_answer = QLabel(self)
-        self.label_answer.setGeometry(75, 70, 525, 30)
+        self.label_answer.setGeometry(75, 78, 525, 30)
         self.label_answer.setFont(QFont('Arial', 15))
 
     def rec(self):
@@ -98,9 +100,6 @@ class Window(QMainWindow):
         recorder.record = False
         recorder.join()
         recorder = False
-
-    def get_filename(self):
-        return self.filename
 
     def set_buttons(self, enable):
         self.button_play_record.setEnabled(enable)
@@ -146,9 +145,19 @@ class Window(QMainWindow):
 
     @pyqtSlot()
     def handle_generate_answer_button(self):
-        # TODO: add getting answer and remove line below
+        if os.path.exists('answer.mp3'):
+            os.remove('answer.mp3')
+
+        # TODO: add getting answer and modify two lines below
         self.label_answer.setText("Answer")
-        # self.recognizer.from_text_to_speech(self.label_answer.text())
+        self.recognizer.from_text_to_speech("Скайнет победит! Нейронки топ!")
+
+        mixer.init()
+        mixer.music.load(self.recognizer.get_answer_filename())
+        mixer.music.play()
+        while mixer.music.get_busy():
+            pass
+        mixer.quit()
 
     filename = "record.wav"
     subtype = 'PCM_16'
@@ -157,10 +166,9 @@ class Window(QMainWindow):
     recorder = False
 
     recognizer = sr(filename)
-    # recognizer.from_text_to_speech(text)
 
 
-# TODO: from test only. After test remove lines below
+# TODO: from test only. After tests remove lines below
 # if __name__ == "__main__":
 #     App = QApplication([])
 #     window = Window()
