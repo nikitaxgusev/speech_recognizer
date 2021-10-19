@@ -1,13 +1,13 @@
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSlot
+from pygame import mixer
+from speech_recognizer import speech_recognizer as sr
 import queue
 import threading
 import sounddevice as sd
 import soundfile as sf
-from speech_recognizer import speech_recognizer as sr
 import os
-from pygame import mixer
 
 
 class Window(QMainWindow):
@@ -164,7 +164,6 @@ class Window(QMainWindow):
     dtype = 'int16'
     q = queue.Queue()
     recorder = False
-
     recognizer = sr(filename)
 
 

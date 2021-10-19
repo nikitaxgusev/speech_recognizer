@@ -1,6 +1,6 @@
 import speech_recognition as sr
-
 from gtts import gTTS
+
 
 class speech_recognizer:
     def __init__(self, filename):
@@ -33,9 +33,3 @@ class speech_recognizer:
 #     recognizer = speech_recognizer(filename)
 #     text = recognizer.from_speech_to_text()
 #     recognizer.from_text_to_speech(text)
-
-
-
-
-
-
