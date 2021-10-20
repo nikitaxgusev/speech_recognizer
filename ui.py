@@ -2,7 +2,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSlot
 from pygame import mixer
-from speech_recognizer import speech_recognizer as sr
+from speech_recognizer import SpeechRecognizer as sr
 import queue
 import threading
 import sounddevice as sd

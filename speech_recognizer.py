@@ -2,10 +2,11 @@ import speech_recognition as sr
 from gtts import gTTS
 
 
-class speech_recognizer:
+class SpeechRecognizer:
     def __init__(self, filename):
         self.filename = filename
         self.recognizer = sr.Recognizer()
+
     # open the file
     def from_speech_to_text(self):
         text = ""
