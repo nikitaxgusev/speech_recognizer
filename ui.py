@@ -1,11 +1,13 @@
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSlot
+from pygame import mixer
+from speech_recognizer import SpeechRecognizer as sr
 import queue
 import threading
-import sys
 import sounddevice as sd
 import soundfile as sf
+import os
 
 
 class Window(QMainWindow):
@@ -16,7 +18,7 @@ class Window(QMainWindow):
         self.setWindowTitle("Speech recognizer")
 
         # setting geometry
-        self.setGeometry(100, 100, 600, 120)
+        self.setGeometry(100, 100, 600, 150)
 
         # calling method
         self.UiComponents()
@@ -28,52 +30,52 @@ class Window(QMainWindow):
     def UiComponents(self):
         # Buttons:
         self.button_start_stop_record = QPushButton("Start record", self)
-        self.button_start_stop_record.setGeometry(0, 90, 70, 30)
+        self.button_start_stop_record.setGeometry(0, 120, 70, 30)
         self.button_start_stop_record.clicked.connect(self.handle_start_stop_record_button)
 
         self.button_play_record = QPushButton("Play record", self)
-        self.button_play_record.setGeometry(70, 90, 70, 30)
+        self.button_play_record.setGeometry(70, 120, 70, 30)
         self.button_play_record.setEnabled(False)
         self.button_play_record.clicked.connect(self.handle_play_record_button)
 
         self.button_recognize_to_text = QPushButton("Recognize to text", self)
-        self.button_recognize_to_text.setGeometry(140, 90, 100, 30)
+        self.button_recognize_to_text.setGeometry(140, 120, 100, 30)
         self.button_recognize_to_text.setEnabled(False)
         self.button_recognize_to_text.clicked.connect(self.handle_recognize_to_text_button)
 
         self.button_classification_text = QPushButton("Classification the text", self)
-        self.button_classification_text.setGeometry(240, 90, 120, 30)
+        self.button_classification_text.setGeometry(240, 120, 120, 30)
         self.button_classification_text.setEnabled(False)
         self.button_classification_text.clicked.connect(self.handle_classification_text_button)
 
         self.button_generate_answer = QPushButton("Generate the answer", self)
-        self.button_generate_answer.setGeometry(360, 90, 120, 30)
+        self.button_generate_answer.setGeometry(360, 120, 120, 30)
         self.button_generate_answer.setEnabled(False)
         self.button_generate_answer.clicked.connect(self.handle_generate_answer_button)
 
         # Labels:
         self.label_title_words_from_rec = QLabel("Text from voice:", self)
-        self.label_title_words_from_rec.setGeometry(0, 2, 140, 20)
+        self.label_title_words_from_rec.setGeometry(0, 2, 140, 30)
         self.label_title_words_from_rec.setFont(QFont('Arial', 15))
 
         self.label_words_from_rec = QLabel(self)
-        self.label_words_from_rec.setGeometry(142, 2, 458, 20)
+        self.label_words_from_rec.setGeometry(142, 2, 458, 30)
         self.label_words_from_rec.setFont(QFont('Arial', 15))
 
         self.label_title_classification = QLabel("Classification:", self)
-        self.label_title_classification.setGeometry(0, 30, 119, 20)
+        self.label_title_classification.setGeometry(0, 40, 119, 30)
         self.label_title_classification.setFont(QFont('Arial', 15))
 
         self.label_classification = QLabel(self)
-        self.label_classification.setGeometry(124, 30, 476, 20)
+        self.label_classification.setGeometry(124, 40, 476, 30)
         self.label_classification.setFont(QFont('Arial', 15))
 
         self.label_title_answer = QLabel("Answer:", self)
-        self.label_title_answer.setGeometry(0, 60, 70, 20)
+        self.label_title_answer.setGeometry(0, 78, 70, 30)
         self.label_title_answer.setFont(QFont('Arial', 15))
 
         self.label_answer = QLabel(self)
-        self.label_answer.setGeometry(75, 60, 525, 20)
+        self.label_answer.setGeometry(75, 78, 525, 30)
         self.label_answer.setFont(QFont('Arial', 15))
 
     def rec(self):
@@ -98,9 +100,6 @@ class Window(QMainWindow):
         recorder.record = False
         recorder.join()
         recorder = False
-
-    def get_filename(self):
-        return self.filename
 
     def set_buttons(self, enable):
         self.button_play_record.setEnabled(enable)
@@ -141,23 +140,35 @@ class Window(QMainWindow):
 
     @pyqtSlot()
     def handle_recognize_to_text_button(self):
-        # TODO: add getting speech_recognizer::from_speech_to_text and remove line below
-        self.label_words_from_rec.setText("Bla bla bla")
+        text = self.recognizer.from_speech_to_text()
+        self.label_words_from_rec.setText(text)
 
     @pyqtSlot()
     def handle_generate_answer_button(self):
-        # TODO: add getting answer and remove line below
+        if os.path.exists('answer.mp3'):
+            os.remove('answer.mp3')
+
+        # TODO: add getting answer and modify two lines below
         self.label_answer.setText("Answer")
+        self.recognizer.from_text_to_speech("Скайнет победит! Нейронки топ!")
+
+        mixer.init()
+        mixer.music.load(self.recognizer.get_answer_filename())
+        mixer.music.play()
+        while mixer.music.get_busy():
+            pass
+        mixer.quit()
 
     filename = "record.wav"
     subtype = 'PCM_16'
     dtype = 'int16'
     q = queue.Queue()
     recorder = False
+    recognizer = sr(filename)
 
 
-# TODO: from test only. After test remove lines below
-if __name__ == "__main__":
-    App = QApplication([])
-    window = Window()
-    sys.exit(App.exec())
+# TODO: from test only. After tests remove lines below
+# if __name__ == "__main__":
+#     App = QApplication([])
+#     window = Window()
+#     sys.exit(App.exec())

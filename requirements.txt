@@ -22,3 +22,4 @@ WMI==1.5.1
 sounddevice==0.4.2
 soundfile==0.10.3.post1
 PyQt5==5.15.4
+pygame==2.0.2
