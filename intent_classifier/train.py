@@ -42,7 +42,12 @@ class IntentClassifier:
         dataset, info = tfds.load('imdb_reviews', with_info=True,
                                   as_supervised=True)
 
+        buffer_size = 10000
+        batch_size = 64
+
         train_dataset, test_dataset = dataset['train'], dataset['test']
+        train_dataset = train_dataset.shuffle(buffer_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
         vocab_size = 1000
 
