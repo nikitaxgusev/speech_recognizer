@@ -8,11 +8,22 @@ import threading
 import sounddevice as sd
 import soundfile as sf
 import os
+from intent_classifier.train import IntentClassifier
 
 
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.filename = "record.wav"
+        self.subtype = 'PCM_16'
+        self.dtype = 'int16'
+        self.q = queue.Queue()
+        self.recorder = False
+        self.recognizer = sr(self.filename)
+
+        self.ic = IntentClassifier()
+        self.ic.load("train_Data")
 
         # setting title
         self.setWindowTitle("Speech recognizer")
@@ -43,13 +54,13 @@ class Window(QMainWindow):
         self.button_recognize_to_text.setEnabled(False)
         self.button_recognize_to_text.clicked.connect(self.handle_recognize_to_text_button)
 
-        self.button_classification_text = QPushButton("Classification the text", self)
-        self.button_classification_text.setGeometry(240, 120, 120, 30)
-        self.button_classification_text.setEnabled(False)
-        self.button_classification_text.clicked.connect(self.handle_classification_text_button)
+        self.button_calculate_emotion_of_text = QPushButton("Calculate emotion of text ", self)
+        self.button_calculate_emotion_of_text.setGeometry(240, 120, 135, 30)
+        self.button_calculate_emotion_of_text.setEnabled(False)
+        self.button_calculate_emotion_of_text.clicked.connect(self.handle_calculate_emotion_of_text_button)
 
         self.button_generate_answer = QPushButton("Generate the answer", self)
-        self.button_generate_answer.setGeometry(360, 120, 120, 30)
+        self.button_generate_answer.setGeometry(375, 120, 120, 30)
         self.button_generate_answer.setEnabled(False)
         self.button_generate_answer.clicked.connect(self.handle_generate_answer_button)
 
@@ -62,20 +73,20 @@ class Window(QMainWindow):
         self.label_words_from_rec.setGeometry(142, 2, 458, 30)
         self.label_words_from_rec.setFont(QFont('Arial', 15))
 
-        self.label_title_classification = QLabel("Classification:", self)
-        self.label_title_classification.setGeometry(0, 40, 119, 30)
-        self.label_title_classification.setFont(QFont('Arial', 15))
+        self.label_title_coefficient = QLabel("Positivity coefficient:", self)
+        self.label_title_coefficient.setGeometry(0, 40, 180, 30)
+        self.label_title_coefficient.setFont(QFont('Arial', 15))
 
-        self.label_classification = QLabel(self)
-        self.label_classification.setGeometry(124, 40, 476, 30)
-        self.label_classification.setFont(QFont('Arial', 15))
+        self.label_coefficient = QLabel(self)
+        self.label_coefficient.setGeometry(182, 40, 476, 30)
+        self.label_coefficient.setFont(QFont('Arial', 15))
 
-        self.label_title_answer = QLabel("Answer:", self)
-        self.label_title_answer.setGeometry(0, 78, 70, 30)
+        self.label_title_answer = QLabel("Evaluation of the text:", self)
+        self.label_title_answer.setGeometry(0, 78, 190, 30)
         self.label_title_answer.setFont(QFont('Arial', 15))
 
         self.label_answer = QLabel(self)
-        self.label_answer.setGeometry(75, 78, 525, 30)
+        self.label_answer.setGeometry(192, 78, 525, 30)
         self.label_answer.setFont(QFont('Arial', 15))
 
     def rec(self):
@@ -104,12 +115,13 @@ class Window(QMainWindow):
     def set_buttons(self, enable):
         self.button_play_record.setEnabled(enable)
         self.button_recognize_to_text.setEnabled(enable)
-        self.button_classification_text.setEnabled(enable)
+        self.button_calculate_emotion_of_text.setEnabled(enable)
         self.button_generate_answer.setEnabled(enable)
 
     def clear_labels(self):
         self.label_words_from_rec.setText("")
-        self.label_classification.setText("")
+        self.label_words_from_rec.setToolTip("")
+        self.label_coefficient.setText("")
         self.label_answer.setText("")
 
     # buttons slots
@@ -134,40 +146,49 @@ class Window(QMainWindow):
         sd.wait()  # Wait until file is done playing
 
     @pyqtSlot()
-    def handle_classification_text_button(self):
-        # TODO: add getting classification and remove line below
-        self.label_classification.setText("1, 2, 3, 4")
+    def handle_calculate_emotion_of_text_button(self):
+        if self.label_words_from_rec.toolTip() != "":
+            self.label_coefficient.setText(str(self.ic.infer(self.label_words_from_rec.toolTip())))
 
     @pyqtSlot()
     def handle_recognize_to_text_button(self):
         text = self.recognizer.from_speech_to_text()
+
+        self.label_words_from_rec.setToolTip(text)
+        if len(text) > 48:
+            text = text[:49] + "..."
+
         self.label_words_from_rec.setText(text)
 
     @pyqtSlot()
     def handle_generate_answer_button(self):
-        if os.path.exists('answer.mp3'):
-            os.remove('answer.mp3')
+        if self.label_coefficient.text() != "":
+            if os.path.exists('answer.mp3'):
+                os.remove('answer.mp3')
 
-        # TODO: add getting answer and modify two lines below
-        self.label_answer.setText("Answer")
-        self.recognizer.from_text_to_speech("Скайнет победит! Нейронки топ!")
+            answer = "negative"
+            coefficient = float(self.label_coefficient.text())
+            if coefficient > 0.6:
+                answer = "positive"
+            if coefficient > 0.2:
+                answer = "slightly positive"
+            elif coefficient > -0.2:
+                answer = "neutral"
+            elif coefficient > -0.6:
+                answer = "slightly negative"
 
-        mixer.init()
-        mixer.music.load(self.recognizer.get_answer_filename())
-        mixer.music.play()
-        while mixer.music.get_busy():
-            pass
-        mixer.quit()
+            self.label_answer.setText(answer)
+            self.recognizer.from_text_to_speech("Text is " + answer)
 
-    filename = "record.wav"
-    subtype = 'PCM_16'
-    dtype = 'int16'
-    q = queue.Queue()
-    recorder = False
-    recognizer = sr(filename)
+            mixer.init()
+            mixer.music.load(self.recognizer.get_answer_filename())
+            mixer.music.play()
+            while mixer.music.get_busy():
+                pass
+            mixer.quit()
 
 
-# TODO: from test only. After tests remove lines below
+# TODO: from test only. After tests comment lines below
 # if __name__ == "__main__":
 #     App = QApplication([])
 #     window = Window()
