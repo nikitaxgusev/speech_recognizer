@@ -170,7 +170,7 @@ class Window(QMainWindow):
             coefficient = float(self.label_coefficient.text())
             if coefficient > 0.6:
                 answer = "positive"
-            if coefficient > 0.2:
+            elif coefficient > 0.2:
                 answer = "slightly positive"
             elif coefficient > -0.2:
                 answer = "neutral"
